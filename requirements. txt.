@@ -2,3 +2,8 @@ streamlit
 pandas
 alpaca-trade-api
 requests
+fastapi
+uvicorn
+alpaca-trade-api
+pandas
+requests
