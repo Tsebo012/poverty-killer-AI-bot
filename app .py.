@@ -1,0 +1,74 @@
+import streamlit as st
+import pandas as pd
+import alpaca_trade_api as tradeapi
+
+# --- PAGE CONFIGURATION FOR MOBILE ---
+st.set_page_config(
+    page_title="Trading Bot Panel",
+    page_icon="📈",
+    layout="centered"
+)
+
+st.title("⚡ Mobile Trading Bot")
+st.markdown("Manage your paper trading bot directly from your phone.")
+
+# --- SIDEBAR OR INPUT SECTION FOR SECRETS ---
+with st.expander("🔑 Configure API Keys"):
+    api_key_input = st.text_input("Alpaca API Key", type="password")
+    secret_key_input = st.text_input("Alpaca Secret Key", type="password")
+    base_url = "https://paper-api.alpaca.markets"
+
+# --- MAIN DASHBOARD CONTROLS ---
+symbol = st.text_input("Asset Symbol", value="AAPL").upper()
+qty = st.number_input("Order Quantity", min_value=1, value=1)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("🚀 Buy Market Order", use_container_width=True):
+        if not api_key_input or not secret_key_input:
+            st.error("Please enter your API keys first.")
+        else:
+            try:
+                api = tradeapi.REST(api_key_input, secret_key_input, base_url, api_version='v2')
+                order = api.submit_order(symbol=symbol, qty=qty, side='buy', type='market', time_in_force='gtc')
+                st.success(f"Successfully bought {qty} {symbol}!")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+with col2:
+    if st.button("🔻 Sell Market Order", use_container_width=True):
+        if not api_key_input or not secret_key_input:
+            st.error("Please enter your API keys first.")
+        else:
+            try:
+                api = tradeapi.REST(api_key_input, secret_key_input, base_url, api_version='v2')
+                order = api.submit_order(symbol=symbol, qty=qty, side='sell', type='market', time_in_force='gtc')
+                st.success(f"Successfully sold {qty} {symbol}!")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+st.divider()
+
+# --- PORTFOLIO & ACCOUNT STATUS ---
+if st.button("📊 View Account & Positions", use_container_width=True):
+    if not api_key_input or not secret_key_input:
+        st.error("Please enter your API keys first.")
+    else:
+        try:
+            api = tradeapi.REST(api_key_input, secret_key_input, base_url, api_version='v2')
+            account = api.get_account()
+            
+            st.subheader("Account Summary")
+            st.metric("Cash Balance", f"${float(account.cash):,.2f}")
+            st.metric("Portfolio Value", f"${float(account.portfolio_value):,.2f}")
+            
+            st.subheader("Open Positions")
+            positions = api.list_positions()
+            if positions:
+                pos_data = [{"Symbol": p.symbol, "Qty": p.qty, "Market Value": p.market_value, "P/L": p.unrealized_pl} for p in positions]
+                st.dataframe(pd.DataFrame(pos_data))
+            else:
+                st.info("No open positions found.")
+        except Exception as e:
+            st.error(f"Error fetching account data: {e}")
